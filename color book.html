@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coloring Page Website</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f3f3f3;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input[type="file"] {
+            margin-bottom: 20px;
+        }
+
+        #colorPicker {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #colorPicker div, #colorPickerInput {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #000;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        canvas {
+            border: 1px solid #000;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Coloring Page Website</h1>
+
+    <input type="file" accept="image/*" id="imageUpload" />
+    <div id="colorPicker">
+        <div style="background-color: #ff0000;" onclick="setColor('#ff0000')"></div>
+        <div style="background-color: #00ff00;" onclick="setColor('#00ff00')"></div>
+        <div style="background-color: #0000ff;" onclick="setColor('#0000ff')"></div>
+        <div style="background-color: #ffff00;" onclick="setColor('#ffff00')"></div>
+        <div style="background-color: #ff00ff;" onclick="setColor('#ff00ff')"></div>
+        <!-- Add more color options here -->
+        <input type="color" id="colorPickerInput" onchange="setColor(this.value)">
+    </div>
+
+    <canvas id="coloringCanvas" style="border:1px solid #000;"></canvas>
+
+    <button onclick="saveImage()">Save Image</button>
+    <button onclick="undo()">Undo</button>
+    <button onclick="redo()">Redo</button>
+
+    <script>
+        let canvas = document.getElementById('coloringCanvas');
+        let ctx = canvas.getContext('2d');
+        let currentColor = '#ff0000'; // Default color
+        let isDrawing = false;
+        let history = [];
+        let historyIndex = -1;
+        let img = new Image();
+
+        function setColor(color) {
+            currentColor = color;
+        }
+
+        function saveState() {
+            historyIndex++;
+            if (historyIndex < history.length) {
+                history.length = historyIndex;
+            }
+            history.push(canvas.toDataURL());
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                const canvasPic = new Image();
+                canvasPic.src = history[historyIndex];
+                canvasPic.onload = function () {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(canvasPic, 0, 0);
+                };
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                const canvasPic = new Image();
+                canvasPic.src = history[historyIndex];
+                canvasPic.onload = function () {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(canvasPic, 0, 0);
+                };
+            }
+        }
+
+        document.getElementById('imageUpload').onchange = function (e) {
+            let imageFile = e.target.files[0];
+            let reader = new FileReader();
+            reader.onload = function (event) {
+                img.onload = function () {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    saveState();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(imageFile);
+        };
+
+        canvas.addEventListener('mousedown', function (e) {
+            isDrawing = true;
+            draw(e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop);
+        });
+
+        canvas.addEventListener('mousemove', function (e) {
+            if (isDrawing) {
+                draw(e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop);
+            }
+        });
+
+        canvas.addEventListener('mouseup', function () {
+            isDrawing = false;
+            saveState();
+        });
+
+        function draw(x, y) {
+            ctx.fillStyle = currentColor;
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function saveImage() {
+            let image = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+            let link = document.createElement('a');
+            link.download = 'coloring_image.png';
+            link.href = image;
+            link.click();
+        }
+    </script>
+</body>
+</html>
+
+
